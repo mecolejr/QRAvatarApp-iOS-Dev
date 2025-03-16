@@ -30,6 +30,13 @@ An iOS application that allows users to create, share, and view 3D avatars using
 3. Download the `GoogleService-Info.plist` file and add it to the project
 4. Enable Email/Password authentication in the Firebase console
 
+## App Structure
+
+- **Authentication**: Firebase Authentication for user management
+- **QR Code Generation**: Create QR codes to share avatars
+- **QR Code Scanning**: Scan QR codes to view shared avatars
+- **3D Model Viewing**: View and customize 3D avatars using RealityKit
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
