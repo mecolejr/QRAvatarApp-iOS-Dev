@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var isShowingScanner = false
     @State private var scannedAvatarID: String? = nil
     @State private var showingPreview = false
+    @EnvironmentObject var authService: AuthService
     
     var body: some View {
         NavigationView {
@@ -83,6 +84,16 @@ struct ContentView: View {
                 Spacer()
             }
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: 
+                Button(action: {
+                    authService.signOut()
+                }) {
+                    HStack {
+                        Text("Sign Out")
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                    }
+                }
+            )
             .onAppear {
                 viewModel.loadModels()
             }
