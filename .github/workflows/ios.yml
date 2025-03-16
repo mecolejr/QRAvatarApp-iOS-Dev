@@ -1,0 +1,43 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [ main, 'Episode-*' ]
+  pull_request:
+    branches: [ main, 'Episode-*' ]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Select Xcode
+      run: sudo xcode-select -switch /Applications/Xcode.app
+      
+    - name: Install CocoaPods
+      run: |
+        gem install cocoapods
+        pod install
+        
+    - name: Build
+      run: |
+        xcodebuild clean build \
+          -workspace QRAvatarApp.xcworkspace \
+          -scheme QRAvatarApp \
+          -destination 'platform=iOS Simulator,name=iPhone 14 Pro,OS=latest' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Run Tests
+      run: |
+        xcodebuild test \
+          -workspace QRAvatarApp.xcworkspace \
+          -scheme QRAvatarApp \
+          -destination 'platform=iOS Simulator,name=iPhone 14 Pro,OS=latest' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
