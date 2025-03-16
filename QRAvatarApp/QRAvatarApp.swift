@@ -3,11 +3,11 @@ import Firebase
 
 @main
 struct QRAvatarApp: App {
-    @StateObject private var authService = AuthService()
+    // Register app delegate
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
-    init() {
-        FirebaseApp.configure()
-    }
+    // Your existing authService
+    @StateObject private var authService = AuthService()
     
     var body: some Scene {
         WindowGroup {

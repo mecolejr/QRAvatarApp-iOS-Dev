@@ -1,8 +1,9 @@
 import SwiftUI
+import Firebase
 
 struct ResetPasswordView: View {
-    @EnvironmentObject var authService: AuthService
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var authService: AuthService
     
     @State private var email = ""
     @State private var resetSent = false
@@ -10,20 +11,42 @@ struct ResetPasswordView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                // Title
                 Text("Reset Password")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    .padding(.top, 30)
+                    .padding(.bottom, 30)
                 
-                // Description
-                Text("Enter your email address and we'll send you a link to reset your password.")
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 30)
-                
-                // Reset Form
-                VStack(spacing: 15) {
+                if resetSent {
+                    VStack(spacing: 20) {
+                        Image(systemName: "checkmark.circle")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .foregroundColor(.green)
+                        
+                        Text("Password Reset Email Sent")
+                            .font(.headline)
+                        
+                        Text("Check your email for instructions to reset your password.")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Text("Return to Login")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(8)
+                                .padding(.horizontal)
+                        }
+                        .padding(.top, 20)
+                    }
+                } else {
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
@@ -31,19 +54,13 @@ struct ResetPasswordView: View {
                         .padding()
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
+                        .padding(.horizontal)
                     
                     if let errorMessage = authService.errorMessage {
                         Text(errorMessage)
                             .foregroundColor(.red)
                             .font(.caption)
-                            .padding(.top, 5)
-                    }
-                    
-                    if resetSent {
-                        Text("Password reset email sent. Please check your inbox.")
-                            .foregroundColor(.green)
-                            .font(.subheadline)
-                            .padding(.top, 5)
+                            .padding(.horizontal)
                     }
                     
                     Button(action: {
@@ -57,27 +74,15 @@ struct ResetPasswordView: View {
                             .padding()
                             .background(Color.blue)
                             .cornerRadius(8)
+                            .padding(.horizontal)
                     }
                     .disabled(email.isEmpty)
                     .opacity(email.isEmpty ? 0.6 : 1)
-                    .padding(.top, 10)
                 }
-                .padding(.horizontal, 30)
-                .padding(.top, 20)
                 
                 Spacer()
-                
-                // Back to Login Button
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("Back to Login")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                        .font(.subheadline)
-                }
-                .padding(.bottom, 30)
             }
+            .padding(.top, 50)
             .navigationBarItems(leading: Button(action: {
                 presentationMode.wrappedValue.dismiss()
             }) {

@@ -17,6 +17,8 @@
 		1H1H1H1H1H1H1H1H1H1H1H1H /* SimulatorPreviewHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2H2H2H2H2H2H2H2H2H2H2H2H /* SimulatorPreviewHelper.swift */; };
 		1I1I1I1I1I1I1I1I1I1I1I1I /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2I2I2I2I2I2I2I2I2I2I2I2I /* QRScannerView.swift */; };
 		1J1J1J1J1J1J1J1J1J1J1J1J /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2J2J2J2J2J2J2J2J2J2J2J2J /* QRCodeGenerator.swift */; };
+		2D4D34942D86835E005E1D19 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2D4D34932D86835E005E1D19 /* GoogleService-Info.plist */; };
+		2D4D34972D8684FA005E1D19 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2D4D34962D8684FA005E1D19 /* FirebaseAnalytics */; };
 		9417B0AFC0D2F26D92C74723 /* Pods_QRAvatarApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 224912586A4C432C380E1167 /* Pods_QRAvatarApp.framework */; };
 /* End PBXBuildFile section */
 
@@ -26,6 +28,7 @@
 		2B2B2B2B2B2B2B2B2B2B2B2B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		2C2C2C2C2C2C2C2C2C2C2C2C /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		2D2D2D2D2D2D2D2D2D2D2D2D /* ModelPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPicker.swift; sourceTree = "<group>"; };
+		2D4D34932D86835E005E1D19 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		2E2E2E2E2E2E2E2E2E2E2E2E /* ModelPickerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerViewModel.swift; sourceTree = "<group>"; };
 		2F2F2F2F2F2F2F2F2F2F2F2F /* ModelPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPreview.swift; sourceTree = "<group>"; };
 		2G2G2G2G2G2G2G2G2G2G2G2G /* AvatarPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarPreviewView.swift; sourceTree = "<group>"; };
@@ -43,6 +46,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D4D34972D8684FA005E1D19 /* FirebaseAnalytics in Frameworks */,
 				9417B0AFC0D2F26D92C74723 /* Pods_QRAvatarApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -53,6 +57,7 @@
 		51542768A34B5FA3A2216D77 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				2D4D34932D86835E005E1D19 /* GoogleService-Info.plist */,
 				224912586A4C432C380E1167 /* Pods_QRAvatarApp.framework */,
 			);
 			name = Frameworks;
@@ -100,7 +105,6 @@
 				95E712617A626FB0A1246C15 /* Pods-QRAvatarApp.debug.xcconfig */,
 				BEC467D381AD14F0DAFAE87D /* Pods-QRAvatarApp.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -150,6 +154,9 @@
 				Base,
 			);
 			mainGroup = 6A6A6A6A6A6A6A6A6A6A6A6A;
+			packageReferences = (
+				2D4D34952D8684FA005E1D19 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = 8A8A8A8A8A8A8A8A8A8A8A8A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -164,6 +171,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D4D34942D86835E005E1D19 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -435,6 +443,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2D4D34952D8684FA005E1D19 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2D4D34962D8684FA005E1D19 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2D4D34952D8684FA005E1D19 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DDDDDDDDDDDDDDDDDDDDDDDD /* Project object */;
 }
