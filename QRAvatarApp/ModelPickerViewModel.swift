@@ -5,8 +5,10 @@ import Combine
 class ModelPickerViewModel: ObservableObject {
     @Published var models: [Model] = []
     @Published var selectedModel: Model?
+    @Published var recentlyViewedModels: [Model] = []
     
     private var cancellables = Set<AnyCancellable>()
+    private let userDefaults = UserDefaults.standard
     
     func loadModels() {
         // Check if we're in the simulator
@@ -26,10 +28,20 @@ class ModelPickerViewModel: ObservableObject {
             loadModelEntities()
         }
         
-        // Select the first model by default if none is selected
-        if selectedModel == nil && !models.isEmpty {
+        // Load the last selected model from UserDefaults
+        if let lastSelectedModelId = userDefaults.getLastSelectedModelId(),
+           let lastModel = models.first(where: { $0.id == lastSelectedModelId }) {
+            selectedModel = lastModel
+        } else if selectedModel == nil && !models.isEmpty {
+            // Select the first model by default if none is selected
             selectedModel = models.first
         }
+        
+        // Load recently viewed models
+        loadRecentlyViewedModels()
+        
+        // Apply saved customizations to models
+        applyCustomizations()
         
         // Notify UI of changes
         objectWillChange.send()
@@ -140,6 +152,61 @@ class ModelPickerViewModel: ObservableObject {
     // Helper method for finding a model by QR code content
     func findModel(byQRCode qrCode: String) -> Model? {
         return models.first(where: { $0.qrCode == qrCode })
+    }
+    
+    // MARK: - UserDefaults Integration
+    
+    /// Save the selected model to UserDefaults
+    func saveSelectedModel() {
+        if let model = selectedModel {
+            userDefaults.saveLastSelectedModel(id: model.id)
+        }
+    }
+    
+    /// Add a model to recently viewed and save to UserDefaults
+    func addToRecentlyViewed(model: Model) {
+        userDefaults.addToRecentlyViewed(modelId: model.id)
+        loadRecentlyViewedModels()
+    }
+    
+    /// Load recently viewed models from UserDefaults
+    private func loadRecentlyViewedModels() {
+        let recentIds = userDefaults.getRecentlyViewedModels()
+        recentlyViewedModels = recentIds.compactMap { id in
+            return models.first(where: { $0.id == id })
+        }
+    }
+    
+    /// Save a color customization for a model
+    func saveModelCustomization(model: Model, color: UIColor) {
+        userDefaults.saveCustomization(for: model.id, color: color)
+    }
+    
+    /// Apply saved customizations to models
+    private func applyCustomizations() {
+        for i in 0..<models.count {
+            if let modelEntity = models[i].modelEntity,
+               let savedColor = userDefaults.getCustomization(for: models[i].id) {
+                
+                // Apply the saved color to the model entity
+                if let model = modelEntity.model {
+                    for j in 0..<model.materials.count {
+                        var material = SimpleMaterial()
+                        material.color = .init(tint: savedColor)
+                        material.metallic = 0.7
+                        material.roughness = 0.3
+                        modelEntity.model?.materials[j] = material
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Update model selection and save to UserDefaults
+    func selectModel(_ model: Model) {
+        selectedModel = model
+        saveSelectedModel()
+        addToRecentlyViewed(model: model)
     }
     
     // MARK: - Preview Helpers

@@ -30,34 +30,104 @@ struct ContentView: View {
 
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
+    @State private var showingSettings = false
+    @State private var appTheme = UserDefaults.standard.getAppTheme()
+    @State private var showRecentlyViewed = true
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Profile")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            if let user = authService.user {
-                Text("Email: \(user.email ?? "No email")")
-                    .font(.headline)
+        NavigationView {
+            VStack(spacing: 20) {
+                // Profile header
+                VStack(spacing: 10) {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .foregroundColor(.blue)
+                    
+                    if let user = authService.user {
+                        Text(user.email ?? "No email")
+                            .font(.headline)
+                    }
+                }
+                .padding(.top, 30)
+                
+                // Settings section
+                List {
+                    Section(header: Text("App Settings")) {
+                        // Theme picker
+                        Picker("App Theme", selection: $appTheme) {
+                            Text("System").tag("system")
+                            Text("Light").tag("light")
+                            Text("Dark").tag("dark")
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .onChange(of: appTheme) { newValue in
+                            UserDefaults.standard.saveAppTheme(newValue)
+                        }
+                        
+                        // Recently viewed toggle
+                        Toggle("Show Recently Viewed", isOn: $showRecentlyViewed)
+                            .onChange(of: showRecentlyViewed) { newValue in
+                                UserDefaults.standard.updateUserPreference(key: "showRecentlyViewed", value: newValue)
+                            }
+                    }
+                    
+                    Section(header: Text("Data Management")) {
+                        Button(action: {
+                            UserDefaults.standard.clearRecentlyViewed()
+                        }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                                Text("Clear Recently Viewed")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        
+                        Button(action: {
+                            UserDefaults.standard.clearCustomizations()
+                        }) {
+                            HStack {
+                                Image(systemName: "paintbrush")
+                                    .foregroundColor(.orange)
+                                Text("Reset All Customizations")
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+                    
+                    Section {
+                        Button(action: {
+                            authService.signOut()
+                        }) {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .foregroundColor(.red)
+                                Text("Sign Out")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
+                }
+                .listStyle(InsetGroupedListStyle())
             }
-            
-            Button(action: {
-                authService.signOut()
-            }) {
-                Text("Sign Out")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red)
-                    .cornerRadius(8)
-                    .padding(.horizontal)
+            .navigationTitle("Profile")
+            .onAppear {
+                // Load user preferences
+                if let preferences = UserDefaults.standard.getUserPreferences() {
+                    if let showRecent = preferences["showRecentlyViewed"] as? Bool {
+                        showRecentlyViewed = showRecent
+                    }
+                } else {
+                    // Initialize default preferences if none exist
+                    let defaultPreferences: [String: Any] = [
+                        "showRecentlyViewed": true
+                    ]
+                    UserDefaults.standard.saveUserPreferences(defaultPreferences)
+                }
             }
-            
-            Spacer()
         }
-        .padding(.top, 50)
     }
 }
 
@@ -70,7 +140,10 @@ struct AvatarFromQRView: View {
     var body: some View {
         VStack {
             if let model = loadedModel {
-                AvatarPreviewView(model: model)
+                AvatarPreviewView(model: model, onColorChanged: { color in
+                    // Save color customization when changed
+                    viewModel.saveModelCustomization(model: model, color: UIColor(color))
+                })
             } else {
                 ProgressView("Loading avatar...")
                     .padding()
@@ -84,6 +157,11 @@ struct AvatarFromQRView: View {
             // Simulate a network delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 loadedModel = viewModel.models.first(where: { $0.id == avatarID }) ?? viewModel.models.first
+                
+                // Add to recently viewed if found
+                if let model = loadedModel {
+                    viewModel.addToRecentlyViewed(model: model)
+                }
             }
         }
     }
@@ -92,6 +170,8 @@ struct AvatarFromQRView: View {
 // View for sharing an avatar via QR code
 struct ShareAvatarView: View {
     let avatarID: String
+    @State private var showingShareSheet = false
+    @State private var qrCodeImage: UIImage?
     
     var body: some View {
         VStack(spacing: 30) {
@@ -107,6 +187,10 @@ struct ShareAvatarView: View {
             QRCodeView(content: avatarID, size: 250)
                 .padding()
                 .shadow(radius: 5)
+                .onAppear {
+                    // Generate QR code image for sharing
+                    qrCodeImage = generateQRCode(from: avatarID)
+                }
             
             Text("Avatar ID: \(avatarID)")
                 .font(.caption)
@@ -115,8 +199,7 @@ struct ShareAvatarView: View {
             Spacer()
             
             Button(action: {
-                // In a real app, this would share the QR code image
-                // For now, it's just a placeholder
+                showingShareSheet = true
             }) {
                 HStack {
                     Image(systemName: "square.and.arrow.up")
@@ -131,6 +214,28 @@ struct ShareAvatarView: View {
         }
         .padding()
         .navigationTitle("Share Avatar")
+        .sheet(isPresented: $showingShareSheet) {
+            if let image = qrCodeImage {
+                ShareSheet(items: [image, "Check out my QR Avatar! Scan this code to view it in the app."])
+            }
+        }
+    }
+    
+    func generateQRCode(from string: String) -> UIImage {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        
+        if let outputImage = filter.outputImage {
+            let scaledImage = outputImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+            if let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) {
+                return UIImage(cgImage: cgImage)
+            }
+        }
+        
+        return UIImage(systemName: "xmark.circle") ?? UIImage()
     }
 }
 

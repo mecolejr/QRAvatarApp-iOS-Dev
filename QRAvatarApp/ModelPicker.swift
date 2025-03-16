@@ -2,9 +2,9 @@ import SwiftUI
 
 struct ModelPicker: View {
     @StateObject private var viewModel = ModelPickerViewModel()
-    @State private var selectedModel: Model?
     @State private var showingPreview = false
     @State private var showingShareView = false
+    @State private var showingRecentModels = false
     
     var body: some View {
         NavigationView {
@@ -14,26 +14,78 @@ struct ModelPicker: View {
                     .fontWeight(.bold)
                     .padding(.top, 50)
                 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 15) {
-                        ForEach(viewModel.models) { model in
-                            ModelPickerItem(model: model, isSelected: model.id == selectedModel?.id) {
-                                selectedModel = model
+                // Recently viewed models section
+                if !viewModel.recentlyViewedModels.isEmpty {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("Recently Viewed")
+                                .font(.headline)
+                                .padding(.leading)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                showingRecentModels.toggle()
+                            }) {
+                                Text(showingRecentModels ? "Hide" : "Show")
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
                             }
+                            .padding(.trailing)
+                        }
+                        
+                        if showingRecentModels {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                LazyHStack(spacing: 15) {
+                                    ForEach(viewModel.recentlyViewedModels) { model in
+                                        ModelPickerItem(model: model, isSelected: model.id == viewModel.selectedModel?.id) {
+                                            viewModel.selectModel(model)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .frame(height: 150)
+                            }
+                            .padding(.vertical, 5)
                         }
                     }
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(10)
                     .padding(.horizontal)
-                    .frame(height: 150)
+                    .padding(.top, 10)
                 }
-                .padding(.vertical)
                 
-                if let selectedModel = selectedModel {
+                // All models section
+                VStack(alignment: .leading) {
+                    Text("All Avatars")
+                        .font(.headline)
+                        .padding(.leading)
+                        .padding(.top, 10)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 15) {
+                            ForEach(viewModel.models) { model in
+                                ModelPickerItem(model: model, isSelected: model.id == viewModel.selectedModel?.id) {
+                                    viewModel.selectModel(model)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        .frame(height: 150)
+                    }
+                    .padding(.vertical, 5)
+                }
+                .padding(.top, 10)
+                
+                if let selectedModel = viewModel.selectedModel {
                     VStack(spacing: 20) {
                         Text("Selected: \(selectedModel.name)")
                             .font(.headline)
                         
                         Button(action: {
                             showingPreview = true
+                            // Add to recently viewed when previewing
+                            viewModel.addToRecentlyViewed(model: selectedModel)
                         }) {
                             Text("View Avatar")
                                 .fontWeight(.semibold)
@@ -72,12 +124,15 @@ struct ModelPicker: View {
                 viewModel.loadModels()
             }
             .sheet(isPresented: $showingPreview) {
-                if let model = selectedModel {
-                    AvatarPreviewView(model: model)
+                if let model = viewModel.selectedModel {
+                    AvatarPreviewView(model: model, onColorChanged: { color in
+                        // Save color customization when changed
+                        viewModel.saveModelCustomization(model: model, color: UIColor(color))
+                    })
                 }
             }
             .sheet(isPresented: $showingShareView) {
-                if let model = selectedModel {
+                if let model = viewModel.selectedModel {
                     ShareAvatarView(avatarID: model.id)
                 }
             }
