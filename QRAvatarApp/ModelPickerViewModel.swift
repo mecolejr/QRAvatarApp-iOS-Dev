@@ -10,6 +10,11 @@ class ModelPickerViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let userDefaults = UserDefaults.standard
     
+    // Initialize and load models
+    init() {
+        loadModels()
+    }
+    
     func loadModels() {
         // Check if we're in the simulator
         if SimulatorEnvironment.isSimulator {
@@ -152,6 +157,24 @@ class ModelPickerViewModel: ObservableObject {
     // Helper method for finding a model by QR code content
     func findModel(byQRCode qrCode: String) -> Model? {
         return models.first(where: { $0.qrCode == qrCode })
+    }
+    
+    // Get a model by ID (for deep link handling)
+    func getModelById(_ id: String) -> Model? {
+        // Make sure models are loaded
+        if models.isEmpty {
+            loadModels()
+        }
+        
+        // Find the model with the given ID
+        let model = models.first(where: { $0.id == id })
+        
+        // If found, add to recently viewed
+        if let model = model {
+            addToRecentlyViewed(model: model)
+        }
+        
+        return model
     }
     
     // MARK: - UserDefaults Integration

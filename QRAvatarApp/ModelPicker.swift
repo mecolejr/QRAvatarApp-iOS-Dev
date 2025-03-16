@@ -6,14 +6,33 @@ struct ModelPicker: View {
     @State private var showingShareView = false
     @State private var showingARView = false
     @State private var showingRecentModels = false
+    @State private var showingScanner = false
+    @State private var modelToShare: Model? = nil
     
     var body: some View {
         NavigationView {
             VStack {
-                Text("Select Your Avatar")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 50)
+                // Header with title and scan button
+                HStack {
+                    Text("Select Your Avatar")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        showingScanner = true
+                    }) {
+                        Image(systemName: "qrcode.viewfinder")
+                            .font(.system(size: 24))
+                            .foregroundColor(.blue)
+                            .padding(10)
+                            .background(Color.blue.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 50)
                 
                 // Recently viewed models section
                 if !viewModel.recentlyViewedModels.isEmpty {
@@ -39,9 +58,17 @@ struct ModelPicker: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 LazyHStack(spacing: 15) {
                                     ForEach(viewModel.recentlyViewedModels) { model in
-                                        ModelPickerItem(model: model, isSelected: model.id == viewModel.selectedModel?.id) {
-                                            viewModel.selectModel(model)
-                                        }
+                                        ModelPickerItem(
+                                            model: model, 
+                                            isSelected: model.id == viewModel.selectedModel?.id,
+                                            onTap: {
+                                                viewModel.selectModel(model)
+                                            },
+                                            onShare: {
+                                                modelToShare = model
+                                                showingShareView = true
+                                            }
+                                        )
                                     }
                                 }
                                 .padding(.horizontal)
@@ -66,9 +93,17 @@ struct ModelPicker: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHStack(spacing: 15) {
                             ForEach(viewModel.models) { model in
-                                ModelPickerItem(model: model, isSelected: model.id == viewModel.selectedModel?.id) {
-                                    viewModel.selectModel(model)
-                                }
+                                ModelPickerItem(
+                                    model: model, 
+                                    isSelected: model.id == viewModel.selectedModel?.id,
+                                    onTap: {
+                                        viewModel.selectModel(model)
+                                    },
+                                    onShare: {
+                                        modelToShare = model
+                                        showingShareView = true
+                                    }
+                                )
                             }
                         }
                         .padding(.horizontal)
@@ -124,6 +159,7 @@ struct ModelPicker: View {
                         
                         // Share QR Code Button
                         Button(action: {
+                            modelToShare = selectedModel
                             showingShareView = true
                         }) {
                             HStack {
@@ -141,9 +177,28 @@ struct ModelPicker: View {
                     }
                     .padding()
                 } else {
-                    Text("Select an avatar to view or share")
-                        .foregroundColor(.secondary)
-                        .padding()
+                    VStack(spacing: 20) {
+                        Text("Select an avatar to view or share")
+                            .foregroundColor(.secondary)
+                            .padding()
+                        
+                        // Scan QR Code Button
+                        Button(action: {
+                            showingScanner = true
+                        }) {
+                            HStack {
+                                Image(systemName: "qrcode.viewfinder")
+                                Text("Scan QR Code")
+                            }
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -161,9 +216,12 @@ struct ModelPicker: View {
                 }
             }
             .sheet(isPresented: $showingShareView) {
-                if let model = viewModel.selectedModel {
-                    ShareAvatarView(avatarID: model.id)
+                if let model = modelToShare ?? viewModel.selectedModel {
+                    EnhancedQRCodeShareSheet(model: model)
                 }
+            }
+            .sheet(isPresented: $showingScanner) {
+                QRCodeScannerView()
             }
             .fullScreenCover(isPresented: $showingARView) {
                 if let model = viewModel.selectedModel {
@@ -183,6 +241,7 @@ struct ModelPickerItem: View {
     let model: Model
     let isSelected: Bool
     let onTap: () -> Void
+    let onShare: () -> Void
     
     var body: some View {
         VStack {
@@ -221,6 +280,26 @@ struct ModelPickerItem: View {
                         .stroke(Color.blue, lineWidth: 3)
                         .frame(width: 100, height: 100)
                 }
+                
+                // Quick share button
+                VStack {
+                    HStack {
+                        Spacer()
+                        
+                        Button(action: onShare) {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .padding(6)
+                                .background(Color.purple)
+                                .clipShape(Circle())
+                        }
+                        .padding(5)
+                    }
+                    
+                    Spacer()
+                }
+                .frame(width: 100, height: 100)
             }
             
             Text(model.name)
@@ -237,13 +316,7 @@ struct ModelPickerItem: View {
 // Preview for ModelPicker
 struct ModelPicker_Previews: PreviewProvider {
     static var previews: some View {
-        StatefulPreviewWrapper(nil) { selectedModel in
-            let viewModel = ModelPickerViewModel.preview()
-            return ModelPicker(viewModel: viewModel, selectedModel: selectedModel) { _ in }
-                .previewLayout(.sizeThatFits)
-                .padding()
-                .previewDisplayName("Model Picker")
-        }
+        ModelPicker()
     }
 }
 
