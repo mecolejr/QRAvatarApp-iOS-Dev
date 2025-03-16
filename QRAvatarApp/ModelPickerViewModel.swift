@@ -119,18 +119,8 @@ class ModelPickerViewModel: ObservableObject {
                 }
                 entity.model?.materials = [SimpleMaterial(color: .orange, isMetallic: true)]
             case 3:
-                // Capsule
-                #if compiler(>=5.9) && canImport(RealityKit) && os(iOS)
-                if #available(iOS 18.0, *) {
-                    entity = ModelEntity(mesh: .generateCapsule(height: 0.5, radius: 0.25))
-                } else {
-                    // Fallback for iOS 16/17
-                    entity = ModelEntity(mesh: .generateSphere(radius: 0.25))
-                }
-                #else
-                // Fallback for older Swift compilers or iOS versions
+                // Capsule (using sphere for compatibility)
                 entity = ModelEntity(mesh: .generateSphere(radius: 0.25))
-                #endif
                 entity.model?.materials = [SimpleMaterial(color: .purple, isMetallic: false)]
             default:
                 entity = ModelEntity(mesh: .generateBox(size: 0.5))
