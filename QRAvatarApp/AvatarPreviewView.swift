@@ -7,6 +7,7 @@ struct AvatarPreviewView: View {
     
     @State private var selectedColor: Color = .blue
     @State private var showingQRCode = false
+    @State private var showingARView = false
     @State private var isCustomized = false
     
     private let colors: [Color] = [.blue, .red, .green, .orange, .purple, .pink]
@@ -88,22 +89,41 @@ struct AvatarPreviewView: View {
             .cornerRadius(12)
             .padding(.horizontal)
             
-            // Share QR Code Button
-            Button(action: {
-                showingQRCode = true
-            }) {
-                HStack {
-                    Image(systemName: "qrcode")
-                    Text("Share via QR Code")
+            // Action buttons
+            HStack(spacing: 15) {
+                // AR View Button
+                Button(action: {
+                    showingARView = true
+                }) {
+                    HStack {
+                        Image(systemName: "arkit")
+                        Text("View in AR")
+                    }
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
-                .font(.headline)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
+                
+                // Share QR Code Button
+                Button(action: {
+                    showingQRCode = true
+                }) {
+                    HStack {
+                        Image(systemName: "qrcode")
+                        Text("Share QR")
+                    }
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
             }
+            .padding(.horizontal)
             
             Spacer()
         }
@@ -111,6 +131,14 @@ struct AvatarPreviewView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingQRCode) {
             QRCodeShareSheet(model: model)
+        }
+        .fullScreenCover(isPresented: $showingARView) {
+            NavigationView {
+                ARViewerView(model: model)
+                    .navigationBarItems(leading: Button("Close") {
+                        showingARView = false
+                    })
+            }
         }
         .onAppear {
             // Check if there's a saved customization for this model

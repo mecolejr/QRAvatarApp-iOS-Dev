@@ -4,6 +4,7 @@ struct ModelPicker: View {
     @StateObject private var viewModel = ModelPickerViewModel()
     @State private var showingPreview = false
     @State private var showingShareView = false
+    @State private var showingARView = false
     @State private var showingRecentModels = false
     
     var body: some View {
@@ -82,32 +83,60 @@ struct ModelPicker: View {
                         Text("Selected: \(selectedModel.name)")
                             .font(.headline)
                         
-                        Button(action: {
-                            showingPreview = true
-                            // Add to recently viewed when previewing
-                            viewModel.addToRecentlyViewed(model: selectedModel)
-                        }) {
-                            Text("View Avatar")
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.green)
-                                .cornerRadius(8)
-                                .padding(.horizontal)
-                        }
-                        
-                        Button(action: {
-                            showingShareView = true
-                        }) {
-                            Text("Share QR Code")
+                        HStack(spacing: 15) {
+                            // View Avatar Button
+                            Button(action: {
+                                showingPreview = true
+                                // Add to recently viewed when previewing
+                                viewModel.addToRecentlyViewed(model: selectedModel)
+                            }) {
+                                HStack {
+                                    Image(systemName: "eye")
+                                    Text("View")
+                                }
                                 .fontWeight(.semibold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.blue)
                                 .cornerRadius(8)
-                                .padding(.horizontal)
+                            }
+                            
+                            // AR View Button
+                            Button(action: {
+                                showingARView = true
+                                // Add to recently viewed when using AR
+                                viewModel.addToRecentlyViewed(model: selectedModel)
+                            }) {
+                                HStack {
+                                    Image(systemName: "arkit")
+                                    Text("AR")
+                                }
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.green)
+                                .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        // Share QR Code Button
+                        Button(action: {
+                            showingShareView = true
+                        }) {
+                            HStack {
+                                Image(systemName: "qrcode")
+                                Text("Share QR Code")
+                            }
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .cornerRadius(8)
+                            .padding(.horizontal)
                         }
                     }
                     .padding()
@@ -134,6 +163,16 @@ struct ModelPicker: View {
             .sheet(isPresented: $showingShareView) {
                 if let model = viewModel.selectedModel {
                     ShareAvatarView(avatarID: model.id)
+                }
+            }
+            .fullScreenCover(isPresented: $showingARView) {
+                if let model = viewModel.selectedModel {
+                    NavigationView {
+                        ARViewerView(model: model)
+                            .navigationBarItems(leading: Button("Close") {
+                                showingARView = false
+                            })
+                    }
                 }
             }
         }
