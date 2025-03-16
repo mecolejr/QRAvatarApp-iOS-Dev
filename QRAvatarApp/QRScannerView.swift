@@ -1,7 +1,72 @@
 import SwiftUI
 import AVFoundation
 
-struct QRScannerView: UIViewControllerRepresentable {
+struct QRScannerView: View {
+    @State private var isShowingScanner = false
+    @State private var scannedCode: String?
+    @State private var showingAvatarPreview = false
+    
+    var body: some View {
+        VStack {
+            Text("Scan QR Code")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top, 50)
+            
+            Spacer()
+            
+            Button(action: {
+                isShowingScanner = true
+            }) {
+                VStack {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 100))
+                        .padding()
+                    
+                    Text("Tap to Scan")
+                        .font(.headline)
+                }
+                .foregroundColor(.blue)
+            }
+            
+            Spacer()
+            
+            if let scannedCode = scannedCode {
+                Text("Last Scanned: \(scannedCode)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .padding()
+                
+                Button(action: {
+                    showingAvatarPreview = true
+                }) {
+                    Text("View Avatar")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                }
+                .padding(.bottom, 50)
+            }
+        }
+        .sheet(isPresented: $isShowingScanner) {
+            QRScannerViewWithOverlay { code in
+                self.scannedCode = code
+                self.showingAvatarPreview = true
+            }
+        }
+        .sheet(isPresented: $showingAvatarPreview) {
+            if let code = scannedCode {
+                AvatarFromQRView(avatarID: code)
+            }
+        }
+    }
+}
+
+struct QRScannerViewRepresentable: UIViewControllerRepresentable {
     // The callback to send scanned code back to SwiftUI
     var onCodeScanned: (String) -> Void
     @Environment(\.presentationMode) var presentationMode
@@ -22,9 +87,9 @@ struct QRScannerView: UIViewControllerRepresentable {
     
     // Coordinator to act as AVCaptureMetadataOutputObjectsDelegate
     class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
-        let parent: QRScannerView
+        let parent: QRScannerViewRepresentable
         
-        init(parent: QRScannerView) {
+        init(parent: QRScannerViewRepresentable) {
             self.parent = parent
         }
         
@@ -106,7 +171,7 @@ struct QRScannerViewWithOverlay: View {
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            QRScannerView(onCodeScanned: onCodeScanned)
+            QRScannerViewRepresentable(onCodeScanned: onCodeScanned)
                 .edgesIgnoringSafeArea(.all)
             
             Button(action: {

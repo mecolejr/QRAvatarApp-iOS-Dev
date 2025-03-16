@@ -1,21 +1,86 @@
 import SwiftUI
 
 struct ModelPicker: View {
-    @ObservedObject var viewModel: ModelPickerViewModel
-    @Binding var selectedModel: Model?
-    var onModelSelected: (Model) -> Void
+    @StateObject private var viewModel = ModelPickerViewModel()
+    @State private var selectedModel: Model?
+    @State private var showingPreview = false
+    @State private var showingShareView = false
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 15) {
-                ForEach(viewModel.models) { model in
-                    ModelPickerItem(model: model, isSelected: model.id == selectedModel?.id) {
-                        selectedModel = model
-                        onModelSelected(model)
+        NavigationView {
+            VStack {
+                Text("Select Your Avatar")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.top, 50)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 15) {
+                        ForEach(viewModel.models) { model in
+                            ModelPickerItem(model: model, isSelected: model.id == selectedModel?.id) {
+                                selectedModel = model
+                            }
+                        }
                     }
+                    .padding(.horizontal)
+                    .frame(height: 150)
+                }
+                .padding(.vertical)
+                
+                if let selectedModel = selectedModel {
+                    VStack(spacing: 20) {
+                        Text("Selected: \(selectedModel.name)")
+                            .font(.headline)
+                        
+                        Button(action: {
+                            showingPreview = true
+                        }) {
+                            Text("View Avatar")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.green)
+                                .cornerRadius(8)
+                                .padding(.horizontal)
+                        }
+                        
+                        Button(action: {
+                            showingShareView = true
+                        }) {
+                            Text("Share QR Code")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(8)
+                                .padding(.horizontal)
+                        }
+                    }
+                    .padding()
+                } else {
+                    Text("Select an avatar to view or share")
+                        .foregroundColor(.secondary)
+                        .padding()
+                }
+                
+                Spacer()
+            }
+            .navigationBarHidden(true)
+            .onAppear {
+                viewModel.loadModels()
+            }
+            .sheet(isPresented: $showingPreview) {
+                if let model = selectedModel {
+                    AvatarPreviewView(model: model)
                 }
             }
-            .padding(.horizontal)
+            .sheet(isPresented: $showingShareView) {
+                if let model = selectedModel {
+                    ShareAvatarView(avatarID: model.id)
+                }
+            }
         }
     }
 }

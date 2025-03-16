@@ -134,6 +134,37 @@ struct ShareAvatarView: View {
     }
 }
 
+// QR Code View
+struct QRCodeView: View {
+    let content: String
+    let size: CGFloat
+    
+    var body: some View {
+        Image(uiImage: generateQRCode(from: content))
+            .interpolation(.none)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+    }
+    
+    func generateQRCode(from string: String) -> UIImage {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        
+        if let outputImage = filter.outputImage {
+            let scaledImage = outputImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+            if let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) {
+                return UIImage(cgImage: cgImage)
+            }
+        }
+        
+        return UIImage(systemName: "xmark.circle") ?? UIImage()
+    }
+}
+
 // MARK: - Previews
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
