@@ -70,7 +70,7 @@ struct PreviewModelFactory {
                 entity = createBoxEntity()
             }
             
-            return Model(name: name, previewImage: image, modelEntity: entity)
+            return Model(name: name, thumbnailImage: image, modelEntity: entity)
         }
         
         return models

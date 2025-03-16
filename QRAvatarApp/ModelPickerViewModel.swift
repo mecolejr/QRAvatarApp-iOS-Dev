@@ -111,11 +111,21 @@ class ModelPickerViewModel: ObservableObject {
                 entity.model?.materials = [SimpleMaterial(color: .green, isMetallic: false)]
             case 2:
                 // Cylinder
-                entity = ModelEntity(mesh: .generateCylinder(height: 0.5, radius: 0.25))
+                if #available(iOS 18.0, *) {
+                    entity = ModelEntity(mesh: .generateCylinder(height: 0.5, radius: 0.25))
+                } else {
+                    // Fallback for iOS 16/17
+                    entity = ModelEntity(mesh: .generateBox(size: [0.5, 0.5, 0.5]))
+                }
                 entity.model?.materials = [SimpleMaterial(color: .orange, isMetallic: true)]
             case 3:
                 // Capsule
-                entity = ModelEntity(mesh: .generateCapsule(height: 0.5, radius: 0.25))
+                if #available(iOS 18.0, *) {
+                    entity = ModelEntity(mesh: .generateCapsule(height: 0.5, radius: 0.25))
+                } else {
+                    // Fallback for iOS 16/17
+                    entity = ModelEntity(mesh: .generateSphere(radius: 0.25))
+                }
                 entity.model?.materials = [SimpleMaterial(color: .purple, isMetallic: false)]
             default:
                 entity = ModelEntity(mesh: .generateBox(size: 0.5))
