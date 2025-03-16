@@ -12,6 +12,11 @@ struct ARViewerView: View {
     @State private var modelScale: Float = 1.0
     @State private var showingHelp = true
     @State private var showingPlacementIndicator = true
+    @State private var showingSavedPlacementsPrompt = false
+    @State private var hasSavedPlacements = false
+    
+    // Keys for UserDefaults
+    private let modelScaleKey = "ar_model_scale"
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -48,6 +53,67 @@ struct ARViewerView: View {
                         }
                     }
                 }
+            }
+            
+            // Saved placements prompt
+            if showingSavedPlacementsPrompt {
+                VStack {
+                    HStack {
+                        Text("You have saved placements for this avatar")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            withAnimation {
+                                showingSavedPlacementsPrompt = false
+                            }
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.white)
+                                .font(.title2)
+                        }
+                    }
+                    .padding()
+                    
+                    HStack(spacing: 20) {
+                        Button(action: {
+                            loadSavedPlacements()
+                            withAnimation {
+                                showingSavedPlacementsPrompt = false
+                            }
+                        }) {
+                            Text("Load Placements")
+                                .fontWeight(.semibold)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                        }
+                        
+                        Button(action: {
+                            // Just dismiss the prompt
+                            withAnimation {
+                                showingSavedPlacementsPrompt = false
+                            }
+                        }) {
+                            Text("Start Fresh")
+                                .fontWeight(.semibold)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                        }
+                    }
+                    .padding(.bottom)
+                }
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(12)
+                .padding()
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
             
             // Bottom controls
@@ -123,8 +189,41 @@ struct ARViewerView: View {
         }
         .navigationTitle("AR Viewer")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarItems(trailing: Button(action: {
+            savePlacements()
+        }) {
+            Image(systemName: "square.and.arrow.down")
+                .font(.system(size: 18))
+        })
         .sheet(isPresented: $showingSettings) {
-            ARSettingsView(modelScale: $modelScale, selectedAnchor: $selectedAnchor)
+            ARSettingsView(
+                modelScale: $modelScale,
+                selectedAnchor: $selectedAnchor,
+                placedAnchors: $placedAnchors,
+                modelId: model.id
+            )
+        }
+        .onAppear {
+            // Load saved scale from UserDefaults
+            if let savedScale = UserDefaults.standard.object(forKey: modelScaleKey) as? Float {
+                modelScale = savedScale
+            }
+            
+            // Check if there are saved placements for this model
+            if let _ = UserDefaults.standard.getARPlacements(for: model.id) {
+                hasSavedPlacements = true
+                
+                // Show prompt to load saved placements
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation {
+                        showingSavedPlacementsPrompt = true
+                    }
+                }
+            }
+        }
+        .onChange(of: modelScale) { newValue in
+            // Save scale to UserDefaults when it changes
+            UserDefaults.standard.set(newValue, forKey: modelScaleKey)
         }
     }
     
@@ -134,6 +233,96 @@ struct ARViewerView: View {
         selectedAnchor = nil
         isPlacementEnabled = true
         showingPlacementIndicator = true
+    }
+    
+    private func savePlacements() {
+        guard !placedAnchors.isEmpty else { return }
+        
+        // Convert placed anchors to serializable format
+        var placementsData: [[String: Any]] = []
+        
+        for anchor in placedAnchors {
+            if let modelEntity = anchor.children.first as? ModelEntity {
+                // Extract position, rotation, and scale
+                let position = anchor.position
+                let rotation = anchor.orientation
+                let scale = modelEntity.scale
+                
+                // Create a dictionary to store the placement data
+                let placementData: [String: Any] = [
+                    "positionX": position.x,
+                    "positionY": position.y,
+                    "positionZ": position.z,
+                    "rotationX": rotation.vector.x,
+                    "rotationY": rotation.vector.y,
+                    "rotationZ": rotation.vector.z,
+                    "rotationW": rotation.vector.w,
+                    "scaleX": scale.x,
+                    "scaleY": scale.y,
+                    "scaleZ": scale.z
+                ]
+                
+                placementsData.append(placementData)
+            }
+        }
+        
+        // Save to UserDefaults
+        UserDefaults.standard.saveARPlacements(for: model.id, placements: placementsData)
+        
+        // Show feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+    
+    private func loadSavedPlacements() {
+        guard let placementsData = UserDefaults.standard.getARPlacements(for: model.id) else { return }
+        
+        // Clear existing anchors
+        placedAnchors.removeAll()
+        
+        // Create new anchors from saved data
+        for placementData in placementsData {
+            // Extract position
+            let posX = placementData["positionX"] as? Float ?? 0
+            let posY = placementData["positionY"] as? Float ?? 0
+            let posZ = placementData["positionZ"] as? Float ?? 0
+            let position = SIMD3<Float>(posX, posY, posZ)
+            
+            // Extract rotation
+            let rotX = placementData["rotationX"] as? Float ?? 0
+            let rotY = placementData["rotationY"] as? Float ?? 0
+            let rotZ = placementData["rotationZ"] as? Float ?? 0
+            let rotW = placementData["rotationW"] as? Float ?? 1
+            let rotation = simd_quatf(vector: SIMD4<Float>(rotX, rotY, rotZ, rotW))
+            
+            // Extract scale
+            let scaleX = placementData["scaleX"] as? Float ?? 1
+            let scaleY = placementData["scaleY"] as? Float ?? 1
+            let scaleZ = placementData["scaleZ"] as? Float ?? 1
+            let scale = SIMD3<Float>(scaleX, scaleY, scaleZ)
+            
+            // Create anchor
+            let anchor = AnchorEntity()
+            anchor.position = position
+            anchor.orientation = rotation
+            
+            // Clone the model entity and add it to the anchor
+            if let modelEntity = model.modelEntity?.clone(recursive: true) {
+                modelEntity.scale = scale
+                anchor.addChild(modelEntity)
+                
+                // Add to placed anchors
+                placedAnchors.append(anchor)
+            }
+        }
+        
+        // Disable placement mode
+        isPlacementEnabled = false
+        showingPlacementIndicator = false
+        
+        // Provide haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
     }
 }
 
@@ -393,7 +582,13 @@ struct ARViewContainer: UIViewRepresentable {
 struct ARSettingsView: View {
     @Binding var modelScale: Float
     @Binding var selectedAnchor: AnchorEntity?
+    @Binding var placedAnchors: [AnchorEntity]
+    let modelId: String
     @Environment(\.presentationMode) var presentationMode
+    
+    // Keys for UserDefaults
+    private let showARTipsKey = "show_ar_tips"
+    @State private var showARTips: Bool = true
     
     var body: some View {
         NavigationView {
@@ -405,11 +600,41 @@ struct ARSettingsView: View {
                     }
                 }
                 
+                Section(header: Text("AR Experience")) {
+                    Toggle("Show AR Tips", isOn: $showARTips)
+                        .onChange(of: showARTips) { newValue in
+                            UserDefaults.standard.set(newValue, forKey: showARTipsKey)
+                        }
+                }
+                
+                Section(header: Text("Saved Placements")) {
+                    Button(action: {
+                        // Clear saved placements for this model
+                        UserDefaults.standard.clearARPlacements(for: modelId)
+                        
+                        // Show feedback
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+                    }) {
+                        HStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(.orange)
+                            Text("Clear Saved Placements")
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
+                
                 Section {
                     if selectedAnchor != nil {
                         Button(action: {
                             // Delete selected model
                             if let selectedAnchor = selectedAnchor {
+                                // Remove from placed anchors array
+                                if let index = placedAnchors.firstIndex(where: { $0 === selectedAnchor }) {
+                                    placedAnchors.remove(at: index)
+                                }
+                                
                                 selectedAnchor.removeFromParent()
                                 self.selectedAnchor = nil
                             }
@@ -423,12 +648,31 @@ struct ARSettingsView: View {
                             }
                         }
                     }
+                    
+                    Button(action: {
+                        // Clear all placed anchors
+                        placedAnchors.forEach { $0.removeFromParent() }
+                        placedAnchors.removeAll()
+                        selectedAnchor = nil
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "xmark.circle")
+                                .foregroundColor(.red)
+                            Text("Clear All Placed Avatars")
+                                .foregroundColor(.red)
+                        }
+                    }
                 }
             }
             .navigationTitle("AR Settings")
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
             })
+            .onAppear {
+                // Load saved preferences
+                showARTips = UserDefaults.standard.bool(forKey: showARTipsKey)
+            }
         }
     }
 }

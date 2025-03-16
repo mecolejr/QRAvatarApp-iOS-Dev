@@ -10,6 +10,8 @@ extension UserDefaults {
         static let recentlyViewedModels = "recentlyViewedModels"
         static let appTheme = "appTheme"
         static let userPreferences = "userPreferences"
+        static let arPlacements = "arPlacements"
+        static let arSettings = "arSettings"
     }
     
     // MARK: - Selected Model
@@ -103,6 +105,65 @@ extension UserDefaults {
         saveUserPreferences(preferences)
     }
     
+    // MARK: - AR Placements
+    
+    /// Save AR placement data for a specific model
+    /// - Parameters:
+    ///   - modelId: The ID of the model
+    ///   - placements: Array of placement data (position, rotation, scale)
+    func saveARPlacements(for modelId: String, placements: [[String: Any]]) {
+        var allPlacements = dictionary(forKey: Keys.arPlacements) as? [String: [[String: Any]]] ?? [:]
+        allPlacements[modelId] = placements
+        set(allPlacements, forKey: Keys.arPlacements)
+    }
+    
+    /// Get AR placement data for a specific model
+    /// - Parameter modelId: The ID of the model
+    /// - Returns: Array of placement data (position, rotation, scale)
+    func getARPlacements(for modelId: String) -> [[String: Any]]? {
+        guard let allPlacements = dictionary(forKey: Keys.arPlacements) as? [String: [[String: Any]]] else {
+            return nil
+        }
+        return allPlacements[modelId]
+    }
+    
+    /// Clear AR placements for a specific model
+    /// - Parameter modelId: The ID of the model
+    func clearARPlacements(for modelId: String) {
+        var allPlacements = dictionary(forKey: Keys.arPlacements) as? [String: [[String: Any]]] ?? [:]
+        allPlacements.removeValue(forKey: modelId)
+        set(allPlacements, forKey: Keys.arPlacements)
+    }
+    
+    /// Clear all AR placements
+    func clearAllARPlacements() {
+        removeObject(forKey: Keys.arPlacements)
+    }
+    
+    // MARK: - AR Settings
+    
+    /// Save AR settings
+    /// - Parameter settings: Dictionary of AR settings
+    func saveARSettings(_ settings: [String: Any]) {
+        set(settings, forKey: Keys.arSettings)
+    }
+    
+    /// Get AR settings
+    /// - Returns: Dictionary of AR settings
+    func getARSettings() -> [String: Any]? {
+        return dictionary(forKey: Keys.arSettings)
+    }
+    
+    /// Update a specific AR setting
+    /// - Parameters:
+    ///   - key: Setting key
+    ///   - value: Setting value
+    func updateARSetting(key: String, value: Any) {
+        var settings = getARSettings() ?? [:]
+        settings[key] = value
+        saveARSettings(settings)
+    }
+    
     // MARK: - Clear Data
     
     /// Clear all saved customizations
@@ -122,5 +183,7 @@ extension UserDefaults {
         removeObject(forKey: Keys.recentlyViewedModels)
         removeObject(forKey: Keys.appTheme)
         removeObject(forKey: Keys.userPreferences)
+        removeObject(forKey: Keys.arPlacements)
+        removeObject(forKey: Keys.arSettings)
     }
 } 
